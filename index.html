@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -25,10 +24,12 @@
 body{margin:0;background:var(--bg);color:var(--text);font-family:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;position:sticky;top:0;backdrop-filter:blur(20px);background:color-mix(in srgb, var(--bg) 80%, transparent);z-index:10;border-bottom:1px solid var(--line)}
 .brand{font-size:20px;font-weight:700;letter-spacing:-.02em}
-.switch{width:51px;height:31px;border-radius:16px;background:var(--line);position:relative;cursor:pointer}
-.switch.on{background:var(--ok)}
-.switch::after{content:"";position:absolute;width:27px;height:27px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.3s}
-.switch.on::after{left:22px}
+.theme-toggle{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;position:relative}
+.theme-toggle svg{width:18px;height:18px;position:absolute;color:var(--text);transition:opacity .3s ease,transform .4s ease}
+.icon-sun{opacity:1;transform:scale(1) rotate(0)}
+.icon-moon{opacity:0;transform:scale(.5) rotate(-90deg)}
+:root[data-theme="dark"] .icon-sun{opacity:0;transform:scale(.5) rotate(90deg)}
+:root[data-theme="dark"] .icon-moon{opacity:1;transform:scale(1) rotate(0)}
 main{max-width:640px;margin:0 auto;padding:28px 20px 60px}
 .card{background:var(--card);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
 label{display:block;font-size:13px;color:var(--sub);margin:14px 0 6px;font-weight:600}
@@ -51,6 +52,15 @@ button.cta:active{opacity:.7}
 .acciones button{border:1px solid var(--line);background:var(--bg);color:var(--text);padding:6px 10px;border-radius:10px;font-size:12px;cursor:pointer}
 .acciones button.danger{color:var(--danger);border-color:var(--danger)}
 #vacio{text-align:center;color:var(--sub);padding:30px 0}
+.hrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.hrow:last-child{border-bottom:none}
+.hrow .dia{width:78px;font-size:13px;font-weight:600}
+.hrow input[type=time]{width:auto;flex:1;padding:8px 10px;font-size:14px}
+.hrow.cerrado input{opacity:.35;pointer-events:none}
+.abierto-toggle{width:42px;height:25px;border-radius:13px;background:var(--line);position:relative;cursor:pointer;flex-shrink:0}
+.abierto-toggle.on{background:var(--ok)}
+.abierto-toggle::after{content:"";position:absolute;width:21px;height:21px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}
+.abierto-toggle.on::after{left:19px}
 
 #splash{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .5s ease}
 #splash span{font-size:44px;font-weight:800;letter-spacing:-.02em;color:var(--text);animation:splashIn .6s ease}
@@ -63,7 +73,10 @@ button.cta:active{opacity:.7}
 <div id="splash"><span>staff.</span></div>
 <header>
   <div class="brand">FADE. <span style="color:var(--sub);font-weight:400;font-size:14px">· staff</span></div>
-  <div class="switch" id="themeSwitch" onclick="toggleTheme()"></div>
+  <button class="theme-toggle" id="themeSwitch" onclick="toggleTheme()" aria-label="Cambiar tema">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="4.2" y1="4.2" x2="5.9" y2="5.9"/><line x1="18.1" y1="18.1" x2="19.8" y2="19.8"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.2" y1="19.8" x2="5.9" y2="18.1"/><line x1="18.1" y1="5.9" x2="19.8" y2="4.2"/></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.8 14.3a8.5 8.5 0 0 1-11-11 8.5 8.5 0 1 0 11 11z"/></svg>
+  </button>
 </header>
 
 <main>
@@ -77,6 +90,12 @@ button.cta:active{opacity:.7}
   </div>
 
   <div id="dashboard" style="display:none">
+    <div class="card" id="horarioCard">
+      <b>Horario semanal</b>
+      <div id="horarioFilas" style="margin-top:8px"></div>
+      <button class="cta" onclick="guardarHorario()">Guardar horario</button>
+      <div id="msgHorario" style="text-align:center;font-size:13px;margin-top:8px;font-weight:600"></div>
+    </div>
     <div class="topbar">
       <button onclick="cargarCitas()">↻ Actualizar</button>
       <button onclick="logout()">Cerrar sesión</button>
@@ -91,8 +110,7 @@ const SUPABASE_ANON_KEY = "sb_publishable_guPyN5b-kVxUFY38mWWI9A_-5hEAYhV";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const root=document.documentElement, sw=document.getElementById('themeSwitch');
-function applyTheme(t){ root.setAttribute('data-theme',t); sw.classList.toggle('on',t==='dark'); localStorage.setItem('theme_staff',t); }
-sw.classList.toggle('on', root.getAttribute('data-theme')==='dark');
+function applyTheme(t){ root.setAttribute('data-theme',t); localStorage.setItem('theme_staff',t); }
 function toggleTheme(){ applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark'); }
 
 /* ====== SPLASH ====== */
@@ -113,6 +131,36 @@ async function mostrarPanel(){
   document.getElementById('loginCard').style.display='none';
   document.getElementById('dashboard').style.display='block';
   cargarCitas();
+  cargarHorario();
+}
+
+const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+async function cargarHorario(){
+  const { data } = await sb.from('horario').select('*').order('dia_semana');
+  const cont=document.getElementById('horarioFilas'); cont.innerHTML='';
+  (data||[]).forEach(h=>{
+    const row=document.createElement('div'); row.className='hrow'+(h.abierto?'':' cerrado');
+    row.innerHTML=`<span class="dia">${DIAS[h.dia_semana]}</span>
+      <div class="abierto-toggle${h.abierto?' on':''}" onclick="this.classList.toggle('on');this.parentElement.classList.toggle('cerrado')"></div>
+      <input type="time" value="${h.hora_inicio}" data-dia="${h.dia_semana}">
+      <input type="time" value="${h.hora_fin}">`;
+    cont.appendChild(row);
+  });
+}
+
+async function guardarHorario(){
+  const msg=document.getElementById('msgHorario'); msg.textContent='Guardando…'; msg.style.color='var(--sub)';
+  for(const row of document.querySelectorAll('#horarioFilas .hrow')){
+    const inputs=row.querySelectorAll('input');
+    await sb.from('horario').update({
+      abierto: row.querySelector('.abierto-toggle').classList.contains('on'),
+      hora_inicio: inputs[0].value,
+      hora_fin: inputs[1].value
+    }).eq('dia_semana', Number(inputs[0].dataset.dia));
+  }
+  msg.textContent='Horario guardado ✓'; msg.style.color='var(--ok)';
+  setTimeout(()=>msg.textContent='', 2500);
 }
 
 async function cargarCitas(){
@@ -121,7 +169,8 @@ async function cargarCitas(){
   if(error || !data || !data.length){ lista.innerHTML='<div id="vacio">No hay citas todavía.</div>'; return; }
   data.forEach(c=>{
     const f=new Date(c.fecha_cita);
-    const fecha=f.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})+' · '+f.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    const fin=new Date(f.getTime()+60*60000);
+    const fecha=f.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})+' · '+f.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'–'+fin.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
     const div=document.createElement('div'); div.className='card cita'+(c.completada?' done':'');
     div.innerHTML=`
       <div class="fecha">${fecha}</div>
