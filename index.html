@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FADE. · Panel del staff</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --bg:#F2F2F7; --card:#FFFFFF; --text:#1C1C1E; --sub:#8A8A8E;
+  --line:#E5E5EA; --accent:#007AFF; --accent-soft:#EAF3FF; --danger:#FF3B30; --ok:#34C759;
+  --shadow:0 8px 24px rgba(0,0,0,.06);
+}
+:root[data-theme="dark"]{
+  --bg:#000000; --card:#1C1C1E; --text:#F2F2F2; --sub:#98989D;
+  --line:#38383A; --accent:#0A84FF; --accent-soft:#0A2A44; --danger:#FF453A; --ok:#30D158;
+  --shadow:0 8px 24px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;position:sticky;top:0;backdrop-filter:blur(20px);background:color-mix(in srgb, var(--bg) 80%, transparent);z-index:10;border-bottom:1px solid var(--line)}
+.brand{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.switch{width:51px;height:31px;border-radius:16px;background:var(--line);position:relative;cursor:pointer}
+.switch.on{background:var(--ok)}
+.switch::after{content:"";position:absolute;width:27px;height:27px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.3s}
+.switch.on::after{left:22px}
+main{max-width:640px;margin:0 auto;padding:28px 20px 60px}
+.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
+label{display:block;font-size:13px;color:var(--sub);margin:14px 0 6px;font-weight:600}
+label:first-child{margin-top:0}
+input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px;outline:none}
+button.cta{width:100%;padding:14px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;margin-top:16px;cursor:pointer}
+button.cta:active{opacity:.7}
+#msg{text-align:center;font-size:14px;margin-top:10px;font-weight:600;display:none}
+#msg.err{color:var(--danger);display:block}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.topbar button{background:none;border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:12px;cursor:pointer;font-size:13px}
+.cita{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.cita .fecha{font-weight:700;font-size:15px;color:var(--accent);min-width:100px}
+.cita .info{flex:1}
+.cita .info b{font-size:15px}
+.cita .info .d{color:var(--sub);font-size:13px;margin-top:2px;line-height:1.5}
+.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent)}
+.cita.done{opacity:.5}
+.acciones{display:flex;flex-direction:column;gap:6px}
+.acciones button{border:1px solid var(--line);background:var(--bg);color:var(--text);padding:6px 10px;border-radius:10px;font-size:12px;cursor:pointer}
+.acciones button.danger{color:var(--danger);border-color:var(--danger)}
+#vacio{text-align:center;color:var(--sub);padding:30px 0}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">FADE. <span style="color:var(--sub);font-weight:400;font-size:14px">· staff</span></div>
+  <div class="switch" id="themeSwitch" onclick="toggleTheme()"></div>
+</header>
+
+<main>
+  <div class="card" id="loginCard">
+    <label>Correo del staff</label>
+    <input id="loginEmail" type="email" placeholder="staff@tunegocio.com">
+    <label>Contraseña</label>
+    <input id="loginPass" type="password" placeholder="••••••••">
+    <button class="cta" onclick="login()">Entrar</button>
+    <div id="msg"></div>
+  </div>
+
+  <div id="dashboard" style="display:none">
+    <div class="topbar">
+      <button onclick="cargarCitas()">↻ Actualizar</button>
+      <button onclick="logout()">Cerrar sesión</button>
+    </div>
+    <div id="lista"></div>
+  </div>
+</main>
+
+<script>
+const SUPABASE_URL = "https://mbmkxeedxbfxgdhrpiol.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_guPyN5b-kVxUFY38mWWI9A_-5hEAYhV";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const root=document.documentElement, sw=document.getElementById('themeSwitch');
+function applyTheme(t){ root.setAttribute('data-theme',t); sw.classList.toggle('on',t==='dark'); localStorage.setItem('theme_staff',t); }
+applyTheme(localStorage.getItem('theme_staff') || (matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+function toggleTheme(){ applyTheme(root.getAttribute('data-theme')==='dark'?'light':'dark'); }
+
+async function login(){
+  const msg=document.getElementById('msg');
+  const { error } = await sb.auth.signInWithPassword({
+    email: document.getElementById('loginEmail').value,
+    password: document.getElementById('loginPass').value
+  });
+  if(error){ msg.textContent='Correo o contraseña incorrectos.'; msg.className='err'; return; }
+  mostrarPanel();
+}
+function logout(){ sb.auth.signOut(); document.getElementById('dashboard').style.display='none'; document.getElementById('loginCard').style.display='block'; }
+
+async function mostrarPanel(){
+  document.getElementById('loginCard').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  cargarCitas();
+}
+
+async function cargarCitas(){
+  const { data, error } = await sb.from('citas').select('*').order('fecha_cita', { ascending:true });
+  const lista=document.getElementById('lista'); lista.innerHTML='';
+  if(error || !data || !data.length){ lista.innerHTML='<div id="vacio">No hay citas todavía.</div>'; return; }
+  data.forEach(c=>{
+    const f=new Date(c.fecha_cita);
+    const fecha=f.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})+' · '+f.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    const div=document.createElement('div'); div.className='card cita'+(c.completada?' done':'');
+    div.innerHTML=`
+      <div class="fecha">${fecha}</div>
+      <div class="info">
+        <b>${c.nombre}</b>
+        <div class="d">${c.tipo_corte} · ${c.precio} € · <span class="badge">${c.metodo_pago==='tarjeta'?'Tarjeta':'En el local'}</span></div>
+        <div class="d">📞 ${c.telefono} · ${c.email}</div>
+      </div>
+      <div class="acciones">
+        <button onclick="marcar('${c.id}', ${!c.completada})">${c.completada?'Reabrir':'Hecha'}</button>
+        <button class="danger" onclick="eliminar('${c.id}')">Eliminar</button>
+      </div>`;
+    lista.appendChild(div);
+  });
+}
+
+async function marcar(id, valor){ await sb.from('citas').update({completada:valor}).eq('id', id); cargarCitas(); }
+async function eliminar(id){ if(confirm('¿Eliminar esta cita?')){ await sb.from('citas').delete().eq('id', id); cargarCitas(); } }
+
+/* Refresca sola la lista si entra/cambia una cita mientras el panel está abierto */
+sb.channel('citas-live').on('postgres_changes', {event:'*', schema:'public', table:'citas'}, ()=>{
+  if(document.getElementById('dashboard').style.display!=='none') cargarCitas();
+}).subscribe();
+
+/* Si ya había sesión iniciada en este navegador, entra directo */
+sb.auth.getSession().then(({data})=>{ if(data.session) mostrarPanel(); });
+</script>
+</body>
+</html>
