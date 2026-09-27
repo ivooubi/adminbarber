@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
 <script>(function(){var t=localStorage.getItem('theme_staff')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.setAttribute('data-theme',t);})();</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -25,23 +30,29 @@
 body{margin:0;background:var(--bg);color:var(--text);font-family:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
 header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;position:sticky;top:0;backdrop-filter:blur(20px);background:color-mix(in srgb, var(--bg) 80%, transparent);z-index:10;border-bottom:1px solid var(--line)}
 .brand{font-size:20px;font-weight:700;letter-spacing:-.02em}
-.theme-toggle{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;position:relative}
+.theme-toggle{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;position:relative;transition:transform .18s ease}
+.theme-toggle:hover{transform:scale(1.08)}
+.theme-toggle:active{transform:scale(.9)}
 .theme-toggle svg{width:18px;height:18px;position:absolute;color:var(--text);transition:opacity .3s ease,transform .4s ease}
 .icon-sun{opacity:1;transform:scale(1) rotate(0)}
 .icon-moon{opacity:0;transform:scale(.5) rotate(-90deg)}
 :root[data-theme="dark"] .icon-sun{opacity:0;transform:scale(.5) rotate(90deg)}
 :root[data-theme="dark"] .icon-moon{opacity:1;transform:scale(1) rotate(0)}
 main{max-width:640px;margin:0 auto;padding:28px 20px 60px}
-.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px}
+.card{background:var(--card);border-radius:20px;padding:20px;box-shadow:var(--shadow);margin-bottom:14px;animation:cardIn .45s ease}
+@keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 label{display:block;font-size:13px;color:var(--sub);margin:14px 0 6px;font-weight:600}
 label:first-child{margin-top:0}
 input{width:100%;padding:13px 14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--text);font-size:16px;outline:none}
-button.cta{width:100%;padding:14px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;margin-top:16px;cursor:pointer}
-button.cta:active{opacity:.7}
+button.cta{width:100%;padding:14px;border:none;border-radius:14px;background:var(--accent);color:#fff;font-size:16px;font-weight:600;margin-top:16px;cursor:pointer;transition:transform .15s ease,opacity .2s}
+button.cta:hover{transform:scale(1.015)}
+button.cta:active{opacity:.7;transform:scale(.97)}
 #msg{text-align:center;font-size:14px;margin-top:10px;font-weight:600;display:none}
 #msg.err{color:var(--danger);display:block}
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.topbar button{background:none;border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:12px;cursor:pointer;font-size:13px}
+.topbar button{background:none;border:1px solid var(--line);color:var(--text);padding:8px 14px;border-radius:12px;cursor:pointer;font-size:13px;transition:transform .15s ease}
+.topbar button:hover{transform:scale(1.04)}
+.topbar button:active{transform:scale(.95)}
 .cita{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .cita .fecha{font-weight:700;font-size:15px;color:var(--accent);min-width:100px}
 .cita .info{flex:1}
@@ -50,7 +61,9 @@ button.cta:active{opacity:.7}
 .badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent)}
 .cita.done{opacity:.5}
 .acciones{display:flex;flex-direction:column;gap:6px}
-.acciones button{border:1px solid var(--line);background:var(--bg);color:var(--text);padding:6px 10px;border-radius:10px;font-size:12px;cursor:pointer}
+.acciones button{border:1px solid var(--line);background:var(--bg);color:var(--text);padding:6px 10px;border-radius:10px;font-size:12px;cursor:pointer;transition:transform .15s ease}
+.acciones button:hover{transform:scale(1.06)}
+.acciones button:active{transform:scale(.92)}
 .acciones button.danger{color:var(--danger);border-color:var(--danger)}
 #vacio{text-align:center;color:var(--sub);padding:30px 0}
 .hrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
@@ -58,10 +71,20 @@ button.cta:active{opacity:.7}
 .hrow .dia{width:78px;font-size:13px;font-weight:600}
 .hrow input[type=time]{width:auto;flex:1;padding:8px 10px;font-size:14px}
 .hrow.cerrado input{opacity:.35;pointer-events:none}
-.abierto-toggle{width:42px;height:25px;border-radius:13px;background:var(--line);position:relative;cursor:pointer;flex-shrink:0}
+.abierto-toggle{width:42px;height:25px;border-radius:13px;background:var(--line);position:relative;cursor:pointer;flex-shrink:0;transition:transform .15s ease}
+.abierto-toggle:hover{transform:scale(1.06)}
+.abierto-toggle:active{transform:scale(.92)}
 .abierto-toggle.on{background:var(--ok)}
 .abierto-toggle::after{content:"";position:absolute;width:21px;height:21px;border-radius:50%;background:#fff;top:2px;left:2px;transition:.2s}
 .abierto-toggle.on::after{left:19px}
+.collapsible-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.chevron{width:18px;height:18px;color:var(--sub);transition:transform .3s ease}
+.chevron.open{transform:rotate(180deg)}
+.collapsible-body{max-height:0;overflow:hidden;transition:max-height .4s ease}
+.collapsible-body.open{max-height:600px}
+@media (prefers-reduced-motion: reduce){
+  .theme-toggle,.card,button.cta,.topbar button,.acciones button,.abierto-toggle,.chevron,.collapsible-body{transition:none!important;animation:none!important}
+}
 
 #splash{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity .5s ease}
 #splash span{font-size:44px;font-weight:800;letter-spacing:-.02em;color:var(--text);animation:splashIn .6s ease}
@@ -91,11 +114,19 @@ button.cta:active{opacity:.7}
   </div>
 
   <div id="dashboard" style="display:none">
+    <button id="btnNotif" onclick="activarNotificaciones()" style="width:100%;margin-bottom:14px;padding:12px;border-radius:14px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer;font-size:13px;font-weight:600;transition:transform .15s ease">🔔 Activar notificaciones en este dispositivo</button>
     <div class="card" id="horarioCard">
-      <b>Horario semanal</b>
-      <div id="horarioFilas" style="margin-top:8px"></div>
-      <button class="cta" onclick="guardarHorario()">Guardar horario</button>
-      <div id="msgHorario" style="text-align:center;font-size:13px;margin-top:8px;font-weight:600"></div>
+      <div class="collapsible-head" onclick="toggleHorario()">
+        <b>Horario semanal</b>
+        <svg class="chevron" id="horarioChevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="collapsible-body" id="horarioBody">
+        <div class="collapsible-inner">
+          <div id="horarioFilas" style="margin-top:8px"></div>
+          <button class="cta" onclick="guardarHorario()">Guardar horario</button>
+          <div id="msgHorario" style="text-align:center;font-size:13px;margin-top:8px;font-weight:600"></div>
+        </div>
+      </div>
     </div>
     <div class="topbar">
       <button onclick="cargarCitas()">↻ Actualizar</button>
@@ -108,7 +139,7 @@ button.cta:active{opacity:.7}
 <script>
 const SUPABASE_URL = "https://mbmkxeedxbfxgdhrpiol.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_guPyN5b-kVxUFY38mWWI9A_-5hEAYhV";
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 
 const root=document.documentElement, sw=document.getElementById('themeSwitch');
 function applyTheme(t){ root.setAttribute('data-theme',t); localStorage.setItem('theme_staff',t); }
@@ -116,6 +147,36 @@ function toggleTheme(){ applyTheme(root.getAttribute('data-theme')==='dark'?'lig
 
 /* ====== SPLASH ====== */
 setTimeout(()=>{ document.getElementById('splash').classList.add('hide'); }, 900);
+
+/* ====== NOTIFICACIONES PUSH ====== */
+const VAPID_PUBLIC_KEY = "BBZCrmoz3vE5ghjgjadlbfBWpoQqHm63NL_2SffDm-abRoXRKyYkY4U97_Ti6J35uqG-cVhIPDRXcx6bFM4TKWs";
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const raw=atob(base64);
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+async function activarNotificaciones(){
+  const btn=document.getElementById('btnNotif');
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)){
+    alert('Este navegador no admite notificaciones. En iPhone: primero añade esta página a la pantalla de inicio (compartir → Añadir a inicio) y ábrela desde ahí.');
+    return;
+  }
+  try{
+    const reg=await navigator.serviceWorker.register('sw.js');
+    const permiso=await Notification.requestPermission();
+    if(permiso!=='granted'){ alert('Tienes que permitir las notificaciones para activarlas.'); return; }
+    const sub=await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+    const j=sub.toJSON();
+    await sb.from('push_subscriptions').upsert({ endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth }, { onConflict:'endpoint' });
+    btn.textContent='🔔 Notificaciones activadas en este dispositivo';
+    btn.disabled=true;
+  }catch(err){
+    alert('No se pudieron activar las notificaciones: '+err);
+  }
+}
 
 async function login(){
   const msg=document.getElementById('msg');
@@ -127,6 +188,14 @@ async function login(){
   mostrarPanel();
 }
 function logout(){ sb.auth.signOut(); document.getElementById('dashboard').style.display='none'; document.getElementById('loginCard').style.display='block'; }
+
+function forzarCierreSesion(){
+  sb.auth.signOut();
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('loginCard').style.display='block';
+}
+window.addEventListener('pagehide', forzarCierreSesion);
+window.addEventListener('pageshow', (e)=>{ if(e.persisted) forzarCierreSesion(); });
 
 async function mostrarPanel(){
   document.getElementById('loginCard').style.display='none';
@@ -192,13 +261,15 @@ async function cargarCitas(){
 async function marcar(id, valor){ await sb.from('citas').update({completada:valor}).eq('id', id); cargarCitas(); }
 async function eliminar(id){ if(confirm('¿Eliminar esta cita?')){ await sb.from('citas').delete().eq('id', id); cargarCitas(); } }
 
+function toggleHorario(){
+  document.getElementById('horarioBody').classList.toggle('open');
+  document.getElementById('horarioChevron').classList.toggle('open');
+}
+
 /* Refresca sola la lista si entra/cambia una cita mientras el panel está abierto */
 sb.channel('citas-live').on('postgres_changes', {event:'*', schema:'public', table:'citas'}, ()=>{
   if(document.getElementById('dashboard').style.display!=='none') cargarCitas();
 }).subscribe();
-
-/* Si ya había sesión iniciada en este navegador, entra directo */
-sb.auth.getSession().then(({data})=>{ if(data.session) mostrarPanel(); });
 </script>
 </body>
 </html>
