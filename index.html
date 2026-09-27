@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -176,7 +177,8 @@ async function cargarCitas(){
       <div class="fecha">${fecha}</div>
       <div class="info">
         <b>${c.nombre}</b>
-        <div class="d">${c.tipo_corte} · ${c.precio} € · <span class="badge">${c.metodo_pago==='tarjeta'?'Tarjeta':'En el local'}</span></div>
+        <div class="d">${c.tipo_corte} · ${c.precio} € · <span class="badge">${c.metodo_pago==='tarjeta'?'Tarjeta':'En el local'}</span>${c.gratis_quincenal?' <span class="badge" style="background:var(--accent-soft);color:var(--accent)">Gratis · quincenal</span>':''}</div>
+        ${c.productos?`<div class="d">🛒 ${c.productos}</div>`:''}
         <div class="d">📞 ${c.telefono} · ${c.email}</div>
       </div>
       <div class="acciones">
