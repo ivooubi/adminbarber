@@ -149,7 +149,7 @@ function toggleTheme(){ applyTheme(root.getAttribute('data-theme')==='dark'?'lig
 setTimeout(()=>{ document.getElementById('splash').classList.add('hide'); }, 900);
 
 /* ====== NOTIFICACIONES PUSH ====== */
-const VAPID_PUBLIC_KEY = "BBZCrmoz3vE5ghjgjadlbfBWpoQqHm63NL_2SffDm-abRoXRKyYkY4U97_Ti6J35uqG-cVhIPDRXcx6bFM4TKWs";
+const VAPID_PUBLIC_KEY = "BEZkBNXK8fFXUBWejG6e-D3nknWWfkIjdWPa7QuH_XyfzTTg2U4DPlsNiJIQ8s6sUjyGaJbBBtEqaL4l6onsiKs";
 
 function urlBase64ToUint8Array(base64String){
   const padding='='.repeat((4-base64String.length%4)%4);
@@ -164,18 +164,41 @@ async function activarNotificaciones(){
     alert('Este navegador no admite notificaciones. En iPhone: primero añade esta página a la pantalla de inicio (compartir → Añadir a inicio) y ábrela desde ahí.');
     return;
   }
+  if(location.protocol!=='https:' && location.hostname!=='localhost'){
+    alert('Las notificaciones solo funcionan si la página se sirve por HTTPS.');
+    return;
+  }
   try{
     const reg=await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
     const permiso=await Notification.requestPermission();
     if(permiso!=='granted'){ alert('Tienes que permitir las notificaciones para activarlas.'); return; }
-    const sub=await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY) });
+    }
     const j=sub.toJSON();
-    await sb.from('push_subscriptions').upsert({ endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth }, { onConflict:'endpoint' });
+    const { error } = await sb.from('push_subscriptions').upsert({ endpoint:j.endpoint, p256dh:j.keys.p256dh, auth:j.keys.auth }, { onConflict:'endpoint' });
+    if(error) throw error;
     btn.textContent='🔔 Notificaciones activadas en este dispositivo';
     btn.disabled=true;
   }catch(err){
-    alert('No se pudieron activar las notificaciones: '+err);
+    alert('No se pudieron activar las notificaciones: '+(err.message||err));
   }
+}
+
+async function comprobarEstadoNotificaciones(){
+  const btn=document.getElementById('btnNotif');
+  if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  try{
+    const reg=await navigator.serviceWorker.getRegistration();
+    if(!reg) return;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      btn.textContent='🔔 Notificaciones activadas en este dispositivo';
+      btn.disabled=true;
+    }
+  }catch(err){ /* silencioso: si falla, se queda el botón por defecto */ }
 }
 
 async function login(){
@@ -202,6 +225,7 @@ async function mostrarPanel(){
   document.getElementById('dashboard').style.display='block';
   cargarCitas();
   cargarHorario();
+  comprobarEstadoNotificaciones();
 }
 
 const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
