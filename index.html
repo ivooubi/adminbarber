@@ -28,6 +28,7 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:'Montserrat',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+input,select,textarea,button{font-family:inherit}
 header{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;position:sticky;top:0;backdrop-filter:blur(20px);background:color-mix(in srgb, var(--bg) 80%, transparent);z-index:10;border-bottom:1px solid var(--line)}
 .brand{font-size:20px;font-weight:700;letter-spacing:-.02em}
 .theme-toggle{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;position:relative;transition:transform .18s ease}
@@ -59,6 +60,20 @@ button.cta:active{opacity:.7;transform:scale(.97)}
 .cita .info b{font-size:15px}
 .cita .info .d{color:var(--sub);font-size:13px;margin-top:2px;line-height:1.5}
 .badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:600;background:var(--accent-soft);color:var(--accent)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:14px}
+.statcard{background:var(--card);border-radius:18px;padding:14px 16px;box-shadow:var(--shadow)}
+.statcard .label{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--sub);margin-bottom:6px}
+.statcard .value{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--text)}
+.statcard.blue .value{color:var(--accent)}
+.statcard.green .value{color:var(--ok)}
+.badge.new{background:color-mix(in srgb, var(--ok) 18%, transparent);color:var(--ok)}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.stat-card{background:var(--card);border-radius:16px;padding:14px 10px;box-shadow:var(--shadow);animation:cardIn .45s ease}
+.stat-card .stat-label{font-size:10px;text-transform:uppercase;letter-spacing:.03em;color:var(--sub);font-weight:700;margin-bottom:6px;line-height:1.3}
+.stat-value{font-size:21px;font-weight:800}
+.stat-value.c-citas{color:var(--text)}
+.stat-value.c-nuevos{color:var(--ok)}
+.stat-value.c-ingresos{color:var(--accent)}
 .cita.done{opacity:.5}
 .acciones{display:flex;flex-direction:column;gap:6px}
 .acciones button{border:1px solid var(--line);background:var(--bg);color:var(--text);padding:6px 10px;border-radius:10px;font-size:12px;cursor:pointer;transition:transform .15s ease}
@@ -128,6 +143,7 @@ button.cta:active{opacity:.7;transform:scale(.97)}
         </div>
       </div>
     </div>
+    <div class="stats" id="stats"></div>
     <div class="topbar">
       <button onclick="cargarCitas()">↻ Actualizar</button>
       <button onclick="logout()">Cerrar sesión</button>
@@ -257,22 +273,72 @@ async function guardarHorario(){
   setTimeout(()=>msg.textContent='', 2500);
 }
 
+function claveCliente(c){
+  return (c.telefono || c.email || c.nombre || '').toString().trim().toLowerCase();
+}
+
+function calcularStatsYPrimeraVez(data){
+  const ahora=new Date(), mes=ahora.getMonth(), anio=ahora.getFullYear();
+  const esDelMes=(f)=> f.getMonth()===mes && f.getFullYear()===anio;
+
+  // Primera cita (por fecha) de cada cliente, para detectar "primera vez"
+  const primeraPorCliente={};
+  data.forEach(c=>{
+    const clave=claveCliente(c);
+    const t=new Date(c.fecha_cita).getTime();
+    if(!primeraPorCliente[clave] || t<primeraPorCliente[clave].t){
+      primeraPorCliente[clave]={ id:c.id, t };
+    }
+  });
+
+  let citasMes=0, ingresosMes=0;
+  data.forEach(c=>{
+    const f=new Date(c.fecha_cita);
+    if(esDelMes(f)){
+      citasMes++;
+      ingresosMes+=Number(c.precio)||0;
+    }
+  });
+
+  let nuevosClientesMes=0;
+  Object.values(primeraPorCliente).forEach(p=>{ if(esDelMes(new Date(p.t))) nuevosClientesMes++; });
+
+  return { citasMes, ingresosMes, nuevosClientesMes, primeraPorCliente };
+}
+
+function renderStats({ citasMes, ingresosMes, nuevosClientesMes }){
+  document.getElementById('stats').innerHTML=`
+    <div class="statcard"><div class="label">Citas del mes</div><div class="value">${citasMes}</div></div>
+    <div class="statcard green"><div class="label">Nuevos clientes</div><div class="value">${nuevosClientesMes}</div></div>
+    <div class="statcard blue"><div class="label">Estimación ingresos</div><div class="value">${ingresosMes} €</div></div>
+  `;
+}
+
 async function cargarCitas(){
   const { data, error } = await sb.from('citas').select('*').order('fecha_cita', { ascending:true });
   const lista=document.getElementById('lista'); lista.innerHTML='';
-  if(error || !data || !data.length){ lista.innerHTML='<div id="vacio">No hay citas todavía.</div>'; return; }
+  if(error || !data || !data.length){
+    lista.innerHTML='<div id="vacio">No hay citas todavía.</div>';
+    renderStats({ citasMes:0, ingresosMes:0, nuevosClientesMes:0 });
+    return;
+  }
+  const { citasMes, ingresosMes, nuevosClientesMes, primeraPorCliente } = calcularStatsYPrimeraVez(data);
+  renderStats({ citasMes, ingresosMes, nuevosClientesMes });
+
   data.forEach(c=>{
     const f=new Date(c.fecha_cita);
     const fin=new Date(f.getTime()+60*60000);
     const fecha=f.toLocaleDateString('es-ES',{day:'2-digit',month:'short'})+' · '+f.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})+'–'+fin.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    const esPrimeraVez = primeraPorCliente[claveCliente(c)]?.id === c.id;
     const div=document.createElement('div'); div.className='card cita'+(c.completada?' done':'');
     div.innerHTML=`
       <div class="fecha">${fecha}</div>
       <div class="info">
-        <b>${c.nombre}</b>
+        <b>${c.nombre}</b>${esPrimeraVez?' <span class="badge" style="background:color-mix(in srgb, var(--ok) 15%, transparent);color:var(--ok)">1ª vez</span>':''}
         <div class="d">${c.tipo_corte} · ${c.precio} € · <span class="badge">${c.metodo_pago==='tarjeta'?'Tarjeta':'En el local'}</span>${c.gratis_quincenal?' <span class="badge" style="background:var(--accent-soft);color:var(--accent)">Gratis · quincenal</span>':''}</div>
         ${c.productos?`<div class="d">🛒 ${c.productos}</div>`:''}
         <div class="d">📞 ${c.telefono} · ${c.email}</div>
+        ${c.created_at?`<div class="d" style="opacity:.7;font-size:11px">Reservado el ${new Date(c.created_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short'})} · ${new Date(c.created_at).toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}</div>`:''}
       </div>
       <div class="acciones">
         <button onclick="marcar('${c.id}', ${!c.completada})">${c.completada?'Reabrir':'Hecha'}</button>
