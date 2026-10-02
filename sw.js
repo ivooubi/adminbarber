@@ -21,7 +21,7 @@ self.addEventListener('push', (event) => {
     body: data.body || 'Se ha reservado una nueva cita.',
     icon: data.icon || 'icon-192.png',
     badge: data.badge || 'icon-192.png',
-    data: { url: data.url || './admin.html' },
+    data: { url: data.url || null },
     vibrate: [100, 50, 100]
   };
 
@@ -30,17 +30,20 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || './admin.html';
+  // self.registration.scope es la carpeta donde está instalado este service worker
+  // (la raíz de tu sitio en GitHub Pages), así que siempre existe, sin depender
+  // de si el panel se llama admin.html, index.html o cualquier otro nombre.
+  const destino = (event.notification.data && event.notification.data.url) || self.registration.scope;
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url.includes('admin.html') && 'focus' in client) {
+        if (client.url.startsWith(self.registration.scope) && 'focus' in client) {
           return client.focus();
         }
       }
       if (self.clients.openWindow) {
-        return self.clients.openWindow(targetUrl);
+        return self.clients.openWindow(destino);
       }
     })
   );
